@@ -1,18 +1,16 @@
 # XG-040G-MD OpenWrt Snapshot Build
 
-This repository builds OpenWrt or ImmortalWrt for Nokia/Bell XG-040G-MD through
-GitHub Actions.
+This repository builds OpenWrt for Nokia/Bell XG-040G-MD through GitHub Actions.
 
-It clones the selected source repository, then builds the Airoha AN7581
+It clones official `openwrt/openwrt`, then builds the Airoha AN7581
 `nokia_xg-040g-md-ubi` target from the selected branch. This UBI profile is
-the intended profile for TC U-Boot style installs. OpenWrt is selected by default.
-When the source branch input is blank, OpenWrt uses `main` and ImmortalWrt uses
-`master`; both are snapshot development branches.
+the intended profile for TC U-Boot style installs. The default source branch is
+`main`, which is the OpenWrt snapshot development branch.
 
 Important:
 
 - This repository is only an automated build wrapper; firmware sources are
-  pulled from the selected upstream repository.
+  pulled from the official OpenWrt repository.
 - The default build is a snapshot build, not an official stable release.
 - For TC U-Boot installs, use the `nokia_xg-040g-md-ubi` `sysupgrade.itb`
   image, not the non-UBI `sysupgrade.bin`.
@@ -23,11 +21,10 @@ Run manually from GitHub:
 1. Open Actions.
 2. Select `Build XG-040G-MD OpenWrt`.
 3. Click `Run workflow`.
-4. Choose `openwrt/openwrt` or `immortalwrt/immortalwrt` in `source_repo`.
-5. Leave `base_branch` blank for the matching default, or enter a source branch
-   that supports the XG-040G-MD UBI profile. Start the workflow.
-6. Download the firmware artifact after the job finishes. Its name includes the
-   selected project and branch, such as `xg040gmd-immortalwrt-master`.
+4. Keep `base_branch` as `main`, or enter an OpenWrt branch that supports the
+   XG-040G-MD UBI profile. Start the workflow.
+5. Download the firmware artifact after the job finishes, for example
+   `xg040gmd-openwrt-main`.
 
 The selected repository, branch and source commit are saved in `source.txt` in
 the build log artifact.
@@ -37,6 +34,11 @@ to change packages; configuration is not passed through the workflow input form,
 which can lose line breaks. After `make defconfig`, the workflow verifies the
 AN7581 XG-040G-MD UBI profile and essential LuCI packages before downloading or
 compiling sources.
+
+Simplified Chinese is enabled with `CONFIG_LUCI_LANG_zh_Hans=y`. LuCI translation
+packages are hidden Kconfig options driven by this language setting, so selecting
+individual `luci-i18n-*-zh-cn` packages alone is insufficient. The workflow checks
+that the base interface and Cloudflared Chinese translations remain enabled.
 
 The Argon theme is fetched from the `master` branch of
 [`jerrykuku/luci-theme-argon`](https://github.com/jerrykuku/luci-theme-argon)
