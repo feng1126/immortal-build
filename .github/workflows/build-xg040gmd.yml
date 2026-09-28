@@ -81,6 +81,9 @@ jobs:
             CONFIG_PACKAGE_luci-ssl \
             CONFIG_PACKAGE_luci-theme-argon \
             CONFIG_PACKAGE_luci-app-wechatpush \
+            CONFIG_PACKAGE_cloudflared \
+            CONFIG_PACKAGE_luci-app-cloudflared \
+            CONFIG_PACKAGE_luci-i18n-cloudflared-zh-cn \
             CONFIG_PACKAGE_luci-app-passwall; do
             if ! grep -qx "${symbol}=y" .config; then
               echo "::error::Required configuration missing: ${symbol}=y"
