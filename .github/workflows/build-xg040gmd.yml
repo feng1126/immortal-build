@@ -56,6 +56,7 @@ jobs:
         run: |
           cd openwrt
           mkdir -p package/custom
+          cp -a ../local_packages/luci-app-airoha-npu package/custom/luci-app-airoha-npu
           cp -a ../local_packages/luci-app-wechatpush package/custom/luci-app-wechatpush
           cp -a ../local_packages/openwrt-passwall/luci-app-passwall package/custom/luci-app-passwall
           cp -a ../local_packages/openwrt-passwall-packages/. package/custom/
@@ -92,6 +93,10 @@ jobs:
             CONFIG_TARGET_airoha \
             CONFIG_TARGET_airoha_an7581 \
             CONFIG_TARGET_airoha_an7581_DEVICE_nokia_xg-040g-md-ubi \
+            CONFIG_PACKAGE_airoha-en7581-npu-firmware \
+            CONFIG_PACKAGE_kmod-nft-offload \
+            CONFIG_PACKAGE_conntrack \
+            CONFIG_PACKAGE_luci-app-airoha-npu \
             CONFIG_PACKAGE_luci \
             CONFIG_PACKAGE_luci-ssl \
             CONFIG_LUCI_LANG_zh_Hans \

@@ -4,12 +4,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-airoha-npu
 PKG_VERSION:=1.0.2
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_LICENSE:=Apache-2.0
 
-LUCI_TITLE:=LuCI Airoha NPU Status
-LUCI_DEPENDS:=+luci-base @TARGET_airoha
+LUCI_TITLE:=LuCI Airoha NPU Control
+LUCI_DEPENDS:=+luci-base +luci-app-firewall +kmod-nft-offload @TARGET_airoha
 
 include $(TOPDIR)/feeds/luci/luci.mk
 

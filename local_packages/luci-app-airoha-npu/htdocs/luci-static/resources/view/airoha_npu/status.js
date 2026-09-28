@@ -29,7 +29,7 @@ var callSetMaxFreq = rpc.declare({
 var callSetOverclock = rpc.declare({
 	object: 'luci.airoha_npu',
 	method: 'setOverclock',
-	params: ['freq_mhz']
+	params: ['freq_mhz', 'confirm']
 });
 
 function formatBytes(bytes) {
@@ -198,7 +198,7 @@ function renderOverclockControls() {
 		'min': '500',
 		'max': '1600',
 		'step': '50',
-		'value': '1400',
+		'value': '1200',
 		'class': 'cbi-input-text',
 		'style': 'width:100px'
 	});
@@ -208,18 +208,15 @@ function renderOverclockControls() {
 		'style': 'margin-left:8px',
 		'click': function() {
 			var freq = parseInt(document.getElementById('oc-freq-input').value);
-			if (isNaN(freq) || freq < 500 || freq > 1600) {
+			if (isNaN(freq) || freq < 500 || freq > 1600 || freq % 50 !== 0) {
 				ui.addNotification(null, E('p', {}, _('Frequency must be 500-1600 MHz')), 'error');
 				return;
 			}
-			if (freq > 1400) {
-				if (!confirm('WARNING: Frequencies above 1400 MHz may be unstable at stock voltage. Continue?')) {
-					return;
-				}
-			}
+			if (!confirm(_('Experimental CPU overclocking can cause a crash or data loss. Stability on this device is not verified. Apply for this session only?')))
+				return;
 			btn.disabled = true;
 			btn.textContent = _('Applying...');
-			callSetOverclock(freq).then(function(res) {
+			callSetOverclock(freq, true).then(function(res) {
 				btn.disabled = false;
 				btn.textContent = _('Apply');
 				if (res && res.error) {
@@ -241,7 +238,7 @@ function renderOverclockControls() {
 		E('span', { 'style': 'color:#aaa' }, 'MHz'),
 		btn,
 		E('span', { 'style': 'color:#888;font-size:85%;margin-left:8px' },
-			_('Direct PLL programming. Governor locked to performance. Stock max: 1200 MHz. Tested stable up to 1500 MHz.'))
+			_('Experimental: direct CPU PLL programming, not NPU overclocking. Not applied at boot; reboot to restore normal settings.'))
 	]);
 }
 
@@ -282,6 +279,7 @@ return view.extend({
 
 		var viewEl = E('div', { 'class': 'cbi-map' }, [
 			E('h2', {}, _('Airoha SoC Status')),
+			E('p', {}, E('a', { 'href': L.url('admin/network/airoha_npu') }, _('Configure hardware flow offloading'))),
 
 			// CPU Frequency Section
 			E('div', { 'class': 'cbi-section' }, [
@@ -290,7 +288,7 @@ return view.extend({
 					E('tr', { 'class': 'tr' }, [
 						E('td', { 'class': 'td', 'width': '33%' }, E('strong', {}, _('Current Frequency'))),
 						E('td', { 'class': 'td' },
-							renderFreqBar(status.cpu_hw_freq, status.cpu_min_freq, status.cpu_max_freq, status.pll_freq_mhz))
+							renderFreqBar(status.cpu_hw_freq || status.cpu_cur_freq, status.cpu_min_freq, status.cpu_max_freq, status.pll_freq_mhz))
 					]),
 					E('tr', { 'class': 'tr' }, [
 						E('td', { 'class': 'td' }, E('strong', {}, _('Governor'))),
@@ -376,7 +374,7 @@ return view.extend({
 				var entries = Array.isArray(ppeData.entries) ? ppeData.entries : [];
 
 				// Update CPU frequency bar
-				updateFreqBar(status.cpu_hw_freq, status.cpu_min_freq, status.cpu_max_freq, status.pll_freq_mhz);
+				updateFreqBar(status.cpu_hw_freq || status.cpu_cur_freq, status.cpu_min_freq, status.cpu_max_freq, status.pll_freq_mhz);
 
 				// Update governor select
 				var govSelect = document.getElementById('cpu-governor-select');

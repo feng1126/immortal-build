@@ -48,3 +48,38 @@ Each run uploads a separate `xg040gmd-build-logs-<run>-<attempt>` artifact even
 when a step fails. It includes the seed and generated configuration, configuration
 and download logs, and compilation logs for steps that ran. Failed parallel builds
 are retried with one job, with the retry output saved as `build-retry.log`.
+
+The firmware includes `luci-app-airoha-npu` and its Chinese translation. Open
+**Network > Airoha NPU** to enable software and hardware flow offloading, then
+click **Save & Apply**. The offloading page uses the standard firewall settings. Hardware flow offloading is
+not enabled by the build or package installation; OpenWrt's default is off.
+Opening the page does not modify the configuration. Upgrades retaining an existing
+firewall configuration retain its offloading choices.
+
+The upstream AN7581 target already enables the NPU driver and this board's device
+tree enables its NPU node. Driver initialization is distinct from enabling traffic
+offloading; this UI controls traffic offloading, not the device's power state.
+The configuration explicitly includes `airoha-en7581-npu-firmware`,
+`kmod-nft-offload`, and `conntrack` to preserve and inspect that support.
+
+After flashing, run `dmesg | grep -iE 'airoha|npu|firmware'` to check driver and
+firmware startup. During a routed LAN-to-WAN TCP transfer, run
+`conntrack -L -o extended 2>/dev/null | grep HW_OFFLOAD`. `HW_OFFLOAD` identifies
+hardware-offloaded connections; `OFFLOAD` alone identifies software offload.
+Enabling the firewall option alone does not prove hardware acceleration works.
+
+This acceleration targets eligible forwarded traffic, not the userspace
+encryption performed by Passwall or Cloudflared. Test proxy routing, traffic
+accounting and any SQM configuration after enabling it. To turn off acceleration,
+set both `firewall.@defaults[0].flow_offloading` and
+`firewall.@defaults[0].flow_offloading_hw` to `0`, commit `firewall`, then restart
+the firewall service.
+
+**Status > SoC Status** shows CPU frequency and provides manual governor and
+frequency-limit controls. Experimental direct CPU PLL overclocking is available
+only on AN7581, requires confirmation on every use, and is not saved or applied
+at boot. It enables the kernel `/dev/mem` interface and BusyBox `devmem` for the
+plugin's fixed-register implementation. The implementation originates from an
+AN7581 dashboard for another board; stability on XG-040G-MD is unverified.
+Reboot to discard manual frequency changes. This changes the CPU clock, not the
+NPU clock. A crash or data loss is possible; no above-stock clock is guaranteed.

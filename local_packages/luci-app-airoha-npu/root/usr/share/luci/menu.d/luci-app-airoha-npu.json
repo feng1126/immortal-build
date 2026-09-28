@@ -1,4 +1,17 @@
 {
+	"admin/network/airoha_npu": {
+		"title": "Airoha NPU",
+		"order": 15,
+		"action": {
+			"type": "view",
+			"path": "airoha_npu/offload"
+		},
+		"depends": {
+			"acl": [
+				"luci-app-airoha-npu"
+			]
+		}
+	},
 	"admin/status/npu": {
 		"title": "SoC Status",
 		"order": 15,
@@ -7,7 +20,9 @@
 			"path": "airoha_npu/status"
 		},
 		"depends": {
-			"acl": [ "luci-app-airoha-npu" ]
+			"acl": [
+				"luci-app-airoha-npu"
+			]
 		}
 	}
 }

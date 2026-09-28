@@ -120,3 +120,48 @@ msgstr "字节"
 
 msgid "Not available"
 msgstr "不可用"
+
+msgid "Airoha NPU"
+msgstr "Airoha NPU"
+
+msgid "Firewall defaults section is missing."
+msgstr "缺少防火墙默认配置。"
+
+msgid "Hardware flow offloading is disabled by default. Enable it manually and click Save & Apply. These settings are shared with Network > Firewall."
+msgstr "硬件流量卸载默认关闭。请手动开启并点击“保存并应用”。此处与“网络 > 防火墙”共用设置。"
+
+msgid "NPU driver"
+msgstr "NPU 驱动"
+
+msgid "Unavailable"
+msgstr "无法获取"
+
+msgid "Bound to device"
+msgstr "已绑定设备"
+
+msgid "Not bound to device"
+msgstr "未绑定设备"
+
+msgid "Driver binding does not mean that traffic is being hardware offloaded."
+msgstr "驱动已绑定不代表流量正在通过硬件加速。"
+
+msgid "Software flow offloading"
+msgstr "软件流量卸载"
+
+msgid "Required for hardware flow offloading."
+msgstr "硬件流量卸载需要先开启此项。"
+
+msgid "Hardware flow offloading"
+msgstr "硬件流量卸载"
+
+msgid "Accelerates eligible forwarded traffic. Test proxy routing, traffic accounting and SQM after enabling. Disable both offloading options to return to normal forwarding."
+msgstr "加速符合条件的转发流量。开启后请验证代理分流、流量统计及 SQM。关闭两项卸载设置可恢复常规转发。"
+
+msgid "Experimental CPU overclocking can cause a crash or data loss. Stability on this device is not verified. Apply for this session only?"
+msgstr "实验性 CPU 超频可能导致死机或数据丢失，尚未验证本机稳定性。是否仅在本次运行中应用？"
+
+msgid "Experimental: direct CPU PLL programming, not NPU overclocking. Not applied at boot; reboot to restore normal settings."
+msgstr "实验功能：直接调整 CPU PLL，并非 NPU 超频。不随开机启用，重启可恢复常规设置。"
+
+msgid "Configure hardware flow offloading"
+msgstr "设置硬件流量卸载"
