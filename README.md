@@ -49,18 +49,15 @@ when a step fails. It includes the seed and generated configuration, configurati
 and download logs, and compilation logs for steps that ran. Failed parallel builds
 are retried with one job, with the retry output saved as `build-retry.log`.
 
-The firmware includes `luci-app-airoha-npu` and its Chinese translation. Open
-**Network > Airoha NPU** to enable software and hardware flow offloading, then
-click **Save & Apply**. The offloading page uses the standard firewall settings. Hardware flow offloading is
-not enabled by the build or package installation; ImmortalWrt's default is off.
-Opening the page does not modify the configuration. Upgrades retaining an existing
-firewall configuration retain its offloading choices.
+Configure software and hardware flow offloading through the standard LuCI
+**Network > Firewall** page, then click **Save & Apply**. The custom NPU and SoC
+status pages have been removed. This build does not override the upstream
+firewall defaults; upgrades retaining a firewall configuration retain its choices.
 
-The upstream AN7581 target already enables the NPU driver and this board's device
-tree enables its NPU node. Driver initialization is distinct from enabling traffic
-offloading; this UI controls traffic offloading, not the device's power state.
-The configuration explicitly includes `airoha-en7581-npu-firmware`,
-`kmod-nft-offload`, and `conntrack` to preserve and inspect that support.
+The upstream AN7581 target enables the NPU driver and this board's device tree
+enables its NPU node. The configuration explicitly includes
+`airoha-en7581-npu-firmware`, `kmod-nft-offload`, and `conntrack` to preserve
+and inspect hardware offloading support.
 
 After flashing, run `dmesg | grep -iE 'airoha|npu|firmware'` to check driver and
 firmware startup. During a routed LAN-to-WAN TCP transfer, run
@@ -75,12 +72,7 @@ set both `firewall.@defaults[0].flow_offloading` and
 `firewall.@defaults[0].flow_offloading_hw` to `0`, commit `firewall`, then restart
 the firewall service.
 
-**Status > SoC Status** displays CPU and NPU frequencies using read-only kernel
-interfaces, refreshing every five seconds. Missing values display as `N/A`.
-CPU frequency controls, overclocking RPC methods, and direct register access have
-been removed. The build configuration disables `/dev/mem` and BusyBox `devmem`.
-The only settings provided by this app are the manual firewall flow-offloading
-switches under **Network > Airoha NPU**; opening either page does not enable them.
+The build configuration disables `/dev/mem` and BusyBox `devmem`.
 
 ## Repository origin
 
