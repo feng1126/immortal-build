@@ -1,13 +1,13 @@
-name: Build XG-040G-MD OpenWrt
+name: Build XG-040G-MD ImmortalWrt
 
 on:
   workflow_dispatch:
     inputs:
       base_branch:
-        description: "OpenWrt source branch"
+        description: "ImmortalWrt source branch"
         type: string
         required: false
-        default: "main"
+        default: "master"
 
 jobs:
   build:
@@ -32,20 +32,20 @@ jobs:
             gettext git libncurses-dev libssl-dev python3-setuptools rsync swig \
             unzip zlib1g-dev file wget ccache python3 python3-dev
 
-      - name: Clone official OpenWrt source
+      - name: Clone ImmortalWrt source
         id: source
         shell: bash
         env:
           SOURCE_BRANCH: ${{ inputs.base_branch }}
         run: |
-          source_branch="${SOURCE_BRANCH:-main}"
+          source_branch="${SOURCE_BRANCH:-master}"
           git check-ref-format --branch "$source_branch"
           echo "branch=$source_branch" >> "$GITHUB_OUTPUT"
           echo "artifact_branch=${source_branch//\//-}" >> "$GITHUB_OUTPUT"
           mkdir -p build-logs
-          git clone --branch "$source_branch" https://github.com/openwrt/openwrt.git openwrt
+          git clone --branch "$source_branch" https://github.com/immortalwrt/immortalwrt.git openwrt
           {
-            echo "Repository: https://github.com/openwrt/openwrt"
+            echo "Repository: https://github.com/immortalwrt/immortalwrt"
             echo "Branch: $source_branch"
             git -C openwrt log -1 --format='%H %s'
           } | tee build-logs/source.txt
@@ -152,7 +152,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xg040gmd-build-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          name: xg040gmd-immortalwrt-build-logs-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             build-logs/
             openwrt/logs/
@@ -177,6 +177,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xg040gmd-openwrt-${{ steps.source.outputs.artifact_branch || 'unknown' }}
+          name: xg040gmd-immortalwrt-${{ steps.source.outputs.artifact_branch || 'unknown' }}
           path: artifact
           retention-days: 14

@@ -1,16 +1,16 @@
-# XG-040G-MD OpenWrt Snapshot Build
+# XG-040G-MD ImmortalWrt Snapshot Build
 
-This repository builds OpenWrt for Nokia/Bell XG-040G-MD through GitHub Actions.
+This repository builds ImmortalWrt for Nokia/Bell XG-040G-MD through GitHub Actions.
 
-It clones official `openwrt/openwrt`, then builds the Airoha AN7581
+It clones official `immortalwrt/immortalwrt`, then builds the Airoha AN7581
 `nokia_xg-040g-md-ubi` target from the selected branch. This UBI profile is
 the intended profile for TC U-Boot style installs. The default source branch is
-`main`, which is the OpenWrt snapshot development branch.
+`master`, which is the ImmortalWrt snapshot development branch.
 
 Important:
 
 - This repository is only an automated build wrapper; firmware sources are
-  pulled from the official OpenWrt repository.
+  pulled from the official ImmortalWrt repository.
 - The default build is a snapshot build, not an official stable release.
 - For TC U-Boot installs, use the `nokia_xg-040g-md-ubi` `sysupgrade.itb`
   image, not the non-UBI `sysupgrade.bin`.
@@ -19,12 +19,12 @@ Important:
 Run manually from GitHub:
 
 1. Open Actions.
-2. Select `Build XG-040G-MD OpenWrt`.
+2. Select `Build XG-040G-MD ImmortalWrt`.
 3. Click `Run workflow`.
-4. Keep `base_branch` as `main`, or enter an OpenWrt branch that supports the
+4. Keep `base_branch` as `master`, or enter an ImmortalWrt branch that supports the
    XG-040G-MD UBI profile. Start the workflow.
 5. Download the firmware artifact after the job finishes, for example
-   `xg040gmd-openwrt-main`.
+   `xg040gmd-immortalwrt-master`.
 
 The selected repository, branch and source commit are saved in `source.txt` in
 the build log artifact.
@@ -44,7 +44,7 @@ The Argon theme is fetched from the `master` branch of
 [`jerrykuku/luci-theme-argon`](https://github.com/jerrykuku/luci-theme-argon)
 at build time. Its commit is recorded in `argon-source.txt` in the build logs.
 
-Each run uploads a separate `xg040gmd-build-logs-<run>-<attempt>` artifact even
+Each run uploads a separate `xg040gmd-immortalwrt-build-logs-<run>-<attempt>` artifact even
 when a step fails. It includes the seed and generated configuration, configuration
 and download logs, and compilation logs for steps that ran. Failed parallel builds
 are retried with one job, with the retry output saved as `build-retry.log`.
@@ -52,7 +52,7 @@ are retried with one job, with the retry output saved as `build-retry.log`.
 The firmware includes `luci-app-airoha-npu` and its Chinese translation. Open
 **Network > Airoha NPU** to enable software and hardware flow offloading, then
 click **Save & Apply**. The offloading page uses the standard firewall settings. Hardware flow offloading is
-not enabled by the build or package installation; OpenWrt's default is off.
+not enabled by the build or package installation; ImmortalWrt's default is off.
 Opening the page does not modify the configuration. Upgrades retaining an existing
 firewall configuration retain its offloading choices.
 
@@ -81,3 +81,9 @@ CPU frequency controls, overclocking RPC methods, and direct register access hav
 been removed. The build configuration disables `/dev/mem` and BusyBox `devmem`.
 The only settings provided by this app are the manual firewall flow-offloading
 switches under **Network > Airoha NPU**; opening either page does not enable them.
+
+## Repository origin
+
+Copied from `feng1126/openwrt-build` at commit `8884ff57ba7b1976f4f7bfe63b034a0abab8f1d0`.
+Firmware source: https://github.com/immortalwrt/immortalwrt (`master` by default).
+Sing-box and PassWall SingBox support are disabled. Xray remains enabled.
