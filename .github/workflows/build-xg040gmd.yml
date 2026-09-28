@@ -184,9 +184,35 @@ jobs:
           make download -j"$(nproc)" V=s
 
       - name: Build firmware
+        shell: bash
         run: |
           cd openwrt
-          make -j"$(nproc)" V=s
+          mkdir -p ../build-logs
+          set -o pipefail
+          {
+            git log -1 --format='%H %s'
+            ./scripts/feeds list -s
+            df -h
+            free -h
+          } > ../build-logs/build-info.txt 2>&1
+          if make -j"$(nproc)" V=s 2>&1 | tee ../build-logs/build.log; then
+            exit 0
+          fi
+          echo "Parallel build failed; retrying with one job for clearer diagnostics."
+          make -j1 V=s 2>&1 | tee ../build-logs/build-retry.log
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xg040gmd-build-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build-logs/
+            openwrt/logs/
+            openwrt/.config
+            openwrt/feeds.buildinfo
+          include-hidden-files: true
+          retention-days: 14
 
       - name: Collect firmware
         if: always()
