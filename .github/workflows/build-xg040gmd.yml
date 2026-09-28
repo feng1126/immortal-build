@@ -106,12 +106,18 @@ jobs:
             CONFIG_PACKAGE_cloudflared \
             CONFIG_PACKAGE_luci-app-cloudflared \
             CONFIG_PACKAGE_luci-i18n-cloudflared-zh-cn \
-            CONFIG_PACKAGE_luci-app-passwall; do
+            CONFIG_PACKAGE_luci-app-passwall \
+            CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray \
+            CONFIG_PACKAGE_xray-core; do
             if ! grep -qx "${symbol}=y" .config; then
               echo "::error::Required configuration missing: ${symbol}=y"
               exit 1
             fi
           done
+          if grep -Eq '^CONFIG_PACKAGE_(sing-box|luci-app-passwall_INCLUDE_SingBox)=(y|m)$' .config; then
+            echo "::error::sing-box must remain disabled in this firmware"
+            exit 1
+          fi
           echo "===== target profile check ====="
           grep -E 'CONFIG_TARGET_airoha|CONFIG_TARGET.*xg|CONFIG_TARGET.*nokia|CONFIG_TARGET.*040' .config || true
           echo "===== luci/package check ====="
