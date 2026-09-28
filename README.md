@@ -29,6 +29,10 @@ which can lose line breaks. After `make defconfig`, the workflow verifies the
 AN7581 XG-040G-MD UBI profile and essential LuCI packages before downloading or
 compiling sources.
 
+The Argon theme is fetched from the `master` branch of
+[`jerrykuku/luci-theme-argon`](https://github.com/jerrykuku/luci-theme-argon)
+at build time. Its commit is recorded in `argon-source.txt` in the build logs.
+
 Each run uploads a separate `xg040gmd-build-logs-<run>-<attempt>` artifact even
 when a step fails. It includes the seed and generated configuration, configuration
 and download logs, and compilation logs for steps that ran. Failed parallel builds

@@ -41,12 +41,22 @@ jobs:
         run: |
           cd openwrt
           mkdir -p package/custom
-          cp -a ../local_packages/luci-theme-argon package/custom/luci-theme-argon
           cp -a ../local_packages/luci-app-wechatpush package/custom/luci-app-wechatpush
           cp -a ../local_packages/openwrt-passwall/luci-app-passwall package/custom/luci-app-passwall
           cp -a ../local_packages/openwrt-passwall-packages/. package/custom/
           echo "===== local custom packages ====="
           find package/custom -maxdepth 2 -name Makefile | sort
+
+      - name: Fetch Argon theme from upstream
+        shell: bash
+        run: |
+          cd openwrt
+          mkdir -p ../build-logs
+          git clone --depth 1 --branch master \
+            https://github.com/jerrykuku/luci-theme-argon.git \
+            package/custom/luci-theme-argon
+          git -C package/custom/luci-theme-argon log -1 --format='%H %s' \
+            | tee ../build-logs/argon-source.txt
 
       - name: Update feeds
         run: |
