@@ -22,3 +22,14 @@ Run manually from GitHub:
 2. Select `Build XG-040G-MD OpenWrt`.
 3. Click `Run workflow`.
 4. Download the firmware artifact after the job finishes.
+
+The build configuration is stored in `configs/xg040gmd.config`. Edit this file
+to change packages; configuration is not passed through the workflow input form,
+which can lose line breaks. After `make defconfig`, the workflow verifies the
+AN7581 XG-040G-MD UBI profile and essential LuCI packages before downloading or
+compiling sources.
+
+Each run uploads a separate `xg040gmd-build-logs-<run>-<attempt>` artifact even
+when a step fails. It includes the seed and generated configuration, configuration
+and download logs, and compilation logs for steps that ran. Failed parallel builds
+are retried with one job, with the retry output saved as `build-retry.log`.
