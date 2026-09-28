@@ -75,11 +75,9 @@ set both `firewall.@defaults[0].flow_offloading` and
 `firewall.@defaults[0].flow_offloading_hw` to `0`, commit `firewall`, then restart
 the firewall service.
 
-**Status > SoC Status** shows CPU frequency and provides manual governor and
-frequency-limit controls. Experimental direct CPU PLL overclocking is available
-only on AN7581, requires confirmation on every use, and is not saved or applied
-at boot. It enables the kernel `/dev/mem` interface and BusyBox `devmem` for the
-plugin's fixed-register implementation. The implementation originates from an
-AN7581 dashboard for another board; stability on XG-040G-MD is unverified.
-Reboot to discard manual frequency changes. This changes the CPU clock, not the
-NPU clock. A crash or data loss is possible; no above-stock clock is guaranteed.
+**Status > SoC Status** displays CPU and NPU frequencies using read-only kernel
+interfaces, refreshing every five seconds. Missing values display as `N/A`.
+CPU frequency controls, overclocking RPC methods, and direct register access have
+been removed. The build configuration disables `/dev/mem` and BusyBox `devmem`.
+The only settings provided by this app are the manual firewall flow-offloading
+switches under **Network > Airoha NPU**; opening either page does not enable them.

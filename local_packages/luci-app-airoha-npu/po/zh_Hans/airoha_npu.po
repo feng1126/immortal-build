@@ -18,41 +18,8 @@ msgstr "CPU 频率"
 msgid "Current Frequency"
 msgstr "当前频率"
 
-msgid "Governor"
-msgstr "调度模式 (Governor)"
-
-msgid "Max Frequency"
-msgstr "最大频率"
-
-msgid "Overclock"
-msgstr "超频"
-
 msgid "CPU Cores"
 msgstr "CPU 核心数"
-
-msgid "Apply"
-msgstr "应用"
-
-msgid "Applying..."
-msgstr "正在应用..."
-
-msgid "Failed to set governor: "
-msgstr "设置调度模式失败： "
-
-msgid "Failed to set max frequency: "
-msgstr "设置最大频率失败： "
-
-msgid "Frequency must be 500-1600 MHz"
-msgstr "频率必须在 500 到 1600 MHz 之间"
-
-msgid "Overclock failed: "
-msgstr "超频失败： "
-
-msgid "CPU set to "
-msgstr "CPU 已设定为 "
-
-msgid "Direct PLL programming. Governor locked to performance. Stock max: 1200 MHz. Tested stable up to 1500 MHz."
-msgstr "直接 PLL 编程。调度模式将锁定为性能 (performance)。默认最大频率：1200 MHz。测试稳定至 1500 MHz。"
 
 # --- NPU Section ---
 
@@ -156,12 +123,6 @@ msgstr "硬件流量卸载"
 
 msgid "Accelerates eligible forwarded traffic. Test proxy routing, traffic accounting and SQM after enabling. Disable both offloading options to return to normal forwarding."
 msgstr "加速符合条件的转发流量。开启后请验证代理分流、流量统计及 SQM。关闭两项卸载设置可恢复常规转发。"
-
-msgid "Experimental CPU overclocking can cause a crash or data loss. Stability on this device is not verified. Apply for this session only?"
-msgstr "实验性 CPU 超频可能导致死机或数据丢失，尚未验证本机稳定性。是否仅在本次运行中应用？"
-
-msgid "Experimental: direct CPU PLL programming, not NPU overclocking. Not applied at boot; reboot to restore normal settings."
-msgstr "实验功能：直接调整 CPU PLL，并非 NPU 超频。不随开机启用，重启可恢复常规设置。"
 
 msgid "Configure hardware flow offloading"
 msgstr "设置硬件流量卸载"

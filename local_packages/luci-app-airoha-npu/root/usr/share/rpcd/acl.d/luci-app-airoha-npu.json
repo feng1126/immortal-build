@@ -20,14 +20,7 @@
 		"write": {
 			"uci": [
 				"firewall"
-			],
-			"ubus": {
-				"luci.airoha_npu": [
-					"setGovernor",
-					"setMaxFreq",
-					"setOverclock"
-				]
-			}
+			]
 		}
 	}
 }

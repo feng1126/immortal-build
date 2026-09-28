@@ -1,8 +1,7 @@
 #!/bin/sh
 
-# Airoha SoC Status RPC backend for LuCI (NPU + CPU + Overclock)
+# Airoha SoC Status RPC backend for LuCI (read-only NPU and CPU status)
 
-. /lib/functions.sh
 
 get_status() {
 	# === NPU Status ===
@@ -87,33 +86,15 @@ get_status() {
 		cpu_avail_freqs=$(cat "$cpufreq_path/scaling_available_frequencies" 2>/dev/null || echo "")
 	fi
 
-	# Read actual PLL frequency from hardware (detects overclock)
-	local pll_freq=0
-	if tr '\000' '\n' < /proc/device-tree/compatible 2>/dev/null | grep -qx 'airoha,an7581' && command -v devmem > /dev/null 2>&1; then
-		local pcw_raw=$(devmem 0x1fa202b4 2>/dev/null)
-		local chg_raw=$(devmem 0x1fa202b8 2>/dev/null)
-		if [ -n "$pcw_raw" ] && [ -n "$chg_raw" ]; then
-			pcw_raw=$((pcw_raw))
-			chg_raw=$((chg_raw))
-			local pcw_int=$(( (pcw_raw >> 24) & 0x7F ))
-			local pll_posdiv=$(( (chg_raw >> 4) & 7 ))
-			if [ "$pll_posdiv" -eq 0 ]; then
-				pll_freq=$((pcw_int * 50))
-			else
-				pll_freq=$((pcw_int * 50 / (1 << pll_posdiv)))
-			fi
-		fi
-	fi
-
 	# Count online CPUs
 	local cpu_count=0
 	if [ -d "/sys/devices/system/cpu" ]; then
 		cpu_count=$(ls -d /sys/devices/system/cpu/cpu[0-9]* 2>/dev/null | wc -l)
 	fi
 
-	printf '{"npu_version":"%s","npu_loaded":%s,"npu_device":"%s","npu_clock":%d,"npu_cores":%d,"offload_packets":%d,"offload_bytes":%d,"memory_regions":%s,"cpu_cur_freq":%d,"cpu_hw_freq":%d,"cpu_governor":"%s","cpu_avail_governors":"%s","cpu_min_freq":%d,"cpu_max_freq":%d,"cpu_avail_freqs":"%s","cpu_count":%d,"pll_freq_mhz":%d}' \
+	printf '{"npu_version":"%s","npu_loaded":%s,"npu_device":"%s","npu_clock":%d,"npu_cores":%d,"offload_packets":%d,"offload_bytes":%d,"memory_regions":%s,"cpu_cur_freq":%d,"cpu_hw_freq":%d,"cpu_governor":"%s","cpu_avail_governors":"%s","cpu_min_freq":%d,"cpu_max_freq":%d,"cpu_avail_freqs":"%s","cpu_count":%d}' \
 		"${npu_ver:-Unknown}" "$npu_loaded" "${npu_device:-}" "${npu_clock:-0}" "${npu_cores:-0}" "${offload_packets:-0}" "${offload_bytes:-0}" "$regions" \
-		"${cpu_cur_freq:-0}" "${cpu_hw_freq:-0}" "${cpu_governor:-unknown}" "${cpu_avail_governors:-}" "${cpu_min_freq:-0}" "${cpu_max_freq:-0}" "${cpu_avail_freqs:-}" "${cpu_count:-0}" "${pll_freq:-0}"
+		"${cpu_cur_freq:-0}" "${cpu_hw_freq:-0}" "${cpu_governor:-unknown}" "${cpu_avail_governors:-}" "${cpu_min_freq:-0}" "${cpu_max_freq:-0}" "${cpu_avail_freqs:-}" "${cpu_count:-0}"
 }
 
 get_ppe_entries() {
@@ -188,226 +169,15 @@ get_ppe_entries() {
 	' "$entries_file" 2>/dev/null || echo '{"entries":[]}'
 }
 
-set_governor() {
-	local governor
-	governor=$(echo "$1" | jsonfilter -e "@.governor" 2>/dev/null)
-
-	if [ -z "$governor" ]; then
-		echo '{"error":"missing governor parameter"}'
-		return
-	fi
-
-	# Validate governor is available
-	local avail=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors 2>/dev/null)
-	if ! echo "$avail" | grep -qw "$governor"; then
-		printf '{"error":"invalid governor: %s"}' "$governor"
-		return
-	fi
-
-	echo "$governor" > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor 2>/dev/null
-	if [ $? -eq 0 ]; then
-		printf '{"result":"ok","governor":"%s"}' "$governor"
-	else
-		echo '{"error":"failed to set governor"}'
-	fi
-}
-
-set_max_freq() {
-	local freq
-	freq=$(echo "$1" | jsonfilter -e "@.freq" 2>/dev/null)
-
-	if [ -z "$freq" ]; then
-		echo '{"error":"missing freq parameter"}'
-		return
-	fi
-
-	# Validate freq is in available list
-	local avail=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies 2>/dev/null)
-	if ! echo "$avail" | grep -qw "$freq"; then
-		printf '{"error":"invalid frequency: %s"}' "$freq"
-		return
-	fi
-
-	echo "$freq" > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq 2>/dev/null
-	if [ $? -eq 0 ]; then
-		printf '{"result":"ok","freq":%d}' "$freq"
-	else
-		echo '{"error":"failed to set max frequency"}'
-	fi
-}
-
-set_overclock() {
-	local target_mhz
-	target_mhz=$(echo "$1" | jsonfilter -e "@.freq_mhz" 2>/dev/null)
-
-	if [ -z "$target_mhz" ]; then
-		echo '{"error":"missing freq_mhz parameter"}'
-		return
-	fi
-
-	# Direct register access is only implemented for AN7581 and requires consent.
-	case "$target_mhz" in
-		''|*[!0-9]*) echo '{"error":"invalid frequency"}'; return ;;
-	esac
-	if [ "${#target_mhz}" -gt 4 ] || [ "$target_mhz" -lt 500 ] || [ "$target_mhz" -gt 1600 ]; then
-		echo '{"error":"frequency must be 500-1600 MHz"}'
-		return
-	fi
-	if [ $((target_mhz % 50)) -ne 0 ]; then
-		echo '{"error":"frequency must be a multiple of 50 MHz"}'
-		return
-	fi
-	if [ "$(echo "$1" | jsonfilter -e '@.confirm' 2>/dev/null)" != true ]; then
-		echo '{"error":"explicit confirmation required"}'
-		return
-	fi
-	if ! tr '\000' '\n' < /proc/device-tree/compatible 2>/dev/null | grep -qx 'airoha,an7581'; then
-		echo '{"error":"overclocking is only implemented for AN7581"}'
-		return
-	fi
-
-	if ! command -v devmem > /dev/null 2>&1; then
-		echo '{"error":"devmem not available"}'
-		return
-	fi
-
-	if ! mkdir /var/lock/airoha-npu-overclock 2>/dev/null; then
-		echo '{"error":"another overclock operation is in progress"}'
-		return
-	fi
-	(
-	set -e
-	trap 'rmdir /var/lock/airoha-npu-overclock 2>/dev/null' EXIT
-	read_pll_reg() {
-		local value
-		value=$(devmem "$1" 32) || return 1
-		echo "$value" | grep -Eq '^0[xX][0-9a-fA-F]{1,8}$' || return 1
-		printf '%s' "$value"
-	}
-	# Calculate PCW and posdiv
-	local posdiv pcw_int
-	if [ "$target_mhz" -lt 1000 ]; then
-		posdiv=1
-		pcw_int=$((target_mhz / 25))
-	else
-		posdiv=0
-		pcw_int=$((target_mhz / 50))
-	fi
-
-	# Lock governor to performance to prevent cpufreq from fighting
-	echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor 2>/dev/null
-
-	# Read current register values
-	local cur_clkmux
-	cur_clkmux=$(read_pll_reg 0x1fa201e0)
-	local cur_pcw
-	cur_pcw=$(read_pll_reg 0x1fa202b4)
-	local cur_chg
-	cur_chg=$(read_pll_reg 0x1fa202b8)
-
-	# Step 1: Enable PLL2 path in CLK_MUX (set bit 2)
-	devmem 0x1fa201e0 32 $(printf "0x%08X" $((cur_clkmux | 0x4)))
-
-	# Step 2: MCUCFG switch to PLL2 (sel=3 in bits[10:9])
-	local cur_u
-	cur_u=$(read_pll_reg 0x1efbe640)
-	devmem 0x1efbe640 32 $(printf "0x%08X" $(((cur_u & 0xFFFFFFE0) | 0x12)))
-	local cur_s
-	cur_s=$(read_pll_reg 0x1efbe7c0)
-	devmem 0x1efbe7c0 32 $(printf "0x%08X" $(((cur_s & 0xFFFFF9FF) | (3 << 9))))
-
-	# Step 3: Unlock PLL registers
-	local cur_p
-	cur_p=$(read_pll_reg 0x1fa20268)
-	devmem 0x1fa20268 32 $(printf "0x%08X" $(((cur_p & 0xFFFFFF00) | 0x12)))
-
-	# Step 4: Write new PCW integer
-	devmem 0x1fa202b4 32 $(printf "0x%08X" $(((cur_pcw & 0x00FFFFFF) | (pcw_int << 24))))
-
-	# Step 5: Write posdiv and toggle CHG bit
-	local chg_bit=$((cur_chg & 1))
-	local cleared=$((cur_chg & 0xFFFFFF8E))
-	if [ "$chg_bit" -eq 1 ]; then
-		devmem 0x1fa202b8 32 $(printf "0x%08X" $((cleared | (posdiv << 4))))
-	else
-		devmem 0x1fa202b8 32 $(printf "0x%08X" $((cleared | (posdiv << 4) | 1)))
-	fi
-
-	# Step 6: Wait for PLL lock
-	sleep 1
-
-	# Step 7: Enable ARMPLL path in CLK_MUX (set bit 0)
-	local cur_clkmux2
-	cur_clkmux2=$(read_pll_reg 0x1fa201e0)
-	devmem 0x1fa201e0 32 $(printf "0x%08X" $((cur_clkmux2 | 0x1)))
-
-	# Step 8: MCUCFG switch back to ARMPLL
-	local cur_u2
-	cur_u2=$(read_pll_reg 0x1efbe640)
-	devmem 0x1efbe640 32 $(printf "0x%08X" $(((cur_u2 & 0xFFFFFFE0) | 0x12)))
-	local cur_s2
-	cur_s2=$(read_pll_reg 0x1efbe7c0)
-	devmem 0x1efbe7c0 32 $(printf "0x%08X" $(((cur_s2 & 0xFFFFF9FF) | (1 << 9))))
-
-	# Step 9: Clear PLL2 path in CLK_MUX
-	local cur_clkmux3
-	cur_clkmux3=$(read_pll_reg 0x1fa201e0)
-	devmem 0x1fa201e0 32 $(printf "0x%08X" $((cur_clkmux3 & 0xFFFFFFFB)))
-
-	# Step 10: Re-lock PLL registers
-	local cur_p2
-	cur_p2=$(read_pll_reg 0x1fa20268)
-	devmem 0x1fa20268 32 $(printf "0x%08X" $((cur_p2 & 0xFFFFFF00)))
-
-	# Verify
-	local final_pcw
-	final_pcw=$(read_pll_reg 0x1fa202b4)
-	local final_chg
-	final_chg=$(read_pll_reg 0x1fa202b8)
-	local read_pcw=$(( (final_pcw >> 24) & 0x7F ))
-	local read_posdiv=$(( (final_chg >> 4) & 7 ))
-	local read_freq
-	if [ "$read_posdiv" -eq 0 ]; then
-		read_freq=$((read_pcw * 50))
-	else
-		read_freq=$((read_pcw * 50 / (1 << read_posdiv)))
-	fi
-
-	printf '{"result":"ok","target_mhz":%d,"actual_mhz":%d,"pcw":%d,"posdiv":%d}' \
-		"$target_mhz" "$read_freq" "$read_pcw" "$read_posdiv"
-	)
-	if [ $? -ne 0 ]; then
-		echo '{"error":"register access failed; reboot before another overclock attempt"}'
-	fi
-}
-
 case "$1" in
 	list)
-		echo '{"getStatus":{},"getPpeEntries":{},"setGovernor":{"governor":"str"},"setMaxFreq":{"freq":"int"},"setOverclock":{"freq_mhz":"int","confirm":"bool"}}'
+		echo '{"getStatus":{},"getPpeEntries":{}}'
 		;;
 	call)
 		case "$2" in
-			getStatus)
-				get_status
-				;;
-			getPpeEntries)
-				get_ppe_entries
-				;;
-			setGovernor)
-				read input
-				set_governor "$input"
-				;;
-			setMaxFreq)
-				read input
-				set_max_freq "$input"
-				;;
-			setOverclock)
-				read input
-				set_overclock "$input"
-				;;
-			*)
-				echo '{"error":"Invalid method"}'
-				;;
+			getStatus) get_status ;;
+			getPpeEntries) get_ppe_entries ;;
+			*) echo '{"error":"Invalid method"}' ;;
 		esac
 		;;
 esac
