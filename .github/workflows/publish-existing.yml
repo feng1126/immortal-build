@@ -46,7 +46,7 @@ jobs:
         BUILD_SHA: ${{ steps.build.outputs.sha }}
         BUILD_RUN_ID: ${{ inputs.run_id }}
         BUILD_ATTEMPT: ${{ steps.build.outputs.attempt }}
-      run: "set -euo pipefail\ntag=\"openwrt-${ARTIFACT_BRANCH}-${BUILD_RUN_ID}-${BUILD_ATTEMPT}\"\
+      run: "set -euo pipefail\ntag=\"immortalwrt-${ARTIFACT_BRANCH}-${BUILD_RUN_ID}-${BUILD_ATTEMPT}\"\
         \nmapfile -d '' files < <(find artifact/targets -type f ! -path '*/packages/*'\
         \ -print0 | sort -z)\nif ! printf '%s\\n' \"${files[@]}\" | grep -Eq '\\.(bin|itb|img|ubi|img\\\
         .gz)$'; then\n  echo \"::error::No firmware image found; refusing to publish\
