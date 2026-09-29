@@ -13,6 +13,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout build repo
@@ -181,3 +183,35 @@ jobs:
           name: xg040gmd-immortalwrt-${{ steps.source.outputs.artifact_branch || 'unknown' }}
           path: artifact
           retention-days: 14
+
+      - name: Publish firmware release
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_BRANCH: ${{ steps.source.outputs.branch }}
+          ARTIFACT_BRANCH: ${{ steps.source.outputs.artifact_branch }}
+        run: |
+          set -euo pipefail
+          tag="immortalwrt-${ARTIFACT_BRANCH}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mapfile -d '' files < <(find artifact/targets -type f ! -path '*/packages/*' -print0 | sort -z)
+          if ! printf '%s\n' "${files[@]}" | grep -Eq '\.(bin|itb|img|ubi|img\.gz)$'; then
+            echo "::error::No firmware image found; refusing to publish release"
+            exit 1
+          fi
+          files+=(artifact/openwrt.config)
+          {
+            echo "XG-040G-MD ImmortalWrt firmware"
+            echo
+            echo "Source branch: ${BUILD_BRANCH}"
+            echo "Build: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            cat build-logs/source.txt
+          } > release-notes.md
+          gh api "repos/$GH_REPO/git/refs" -f "ref=refs/tags/$tag" -f "sha=$GITHUB_SHA"
+          gh release create "$tag" "${files[@]}" \
+            --verify-tag \
+            --title "XG-040G-MD ImmortalWrt ${BUILD_BRANCH} · ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}" \
+            --notes-file release-notes.md --draft
+          gh release edit "$tag" --draft=false --latest
